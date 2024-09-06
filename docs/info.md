@@ -9,12 +9,18 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-Explain how your project works
+Docs to follow.
 
 ## How to test
 
-Explain how to use your project
+Docs to follow.
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+Standard Tiny Tapeout PCB.  The IC is a UART DTE.
+
+Trying for:
+* TxD on UO_OUT[4] for OUT4 on GPIO13 with RP2040 UART0 (main set)
+* RxD on UO_IN[3]  for  IN3 on GPIO12 with RP2040 UART0 (main set)
+* RTS on UO_OUT[5] for OUT5 on GPIO14 with RP2040 UART0 (main set)
+* CTS on UO_IN[6]  for  IN6 on GPIO19 with RP2040 UART0 (adjacent set)
