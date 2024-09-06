@@ -59,8 +59,8 @@ module UartTop (
     .io_int_txint                     (uartArea_uart_io_int_txint                    ), //o
     .io_int_rxint                     (uartArea_uart_io_int_rxint                    ), //o
     .io_txctrl_gatedTxdStopBitSupport (uartArea_uart_io_txctrl_gatedTxdStopBitSupport), //o
-    .clk                              (clk                                           ), //i
-    .resetOut                         (resetOut                                      )  //i
+    .resetOut                         (resetOut                                      ), //i
+    .clk                              (clk                                           )  //i
   );
   OneHalfStopUnit uartArea_oneHalfStopUnit (
     .io_trigger (uartArea_uart_io_txctrl_gatedTxdStopBitSupport), //i
@@ -207,8 +207,8 @@ module UartDevice (
   output              io_int_txint,
   output              io_int_rxint,
   output              io_txctrl_gatedTxdStopBitSupport,
-  input               clk,
-  input               resetOut
+  input               resetOut,
+  input               clk
 );
 
   wire       [7:0]    regCtrl_io_dataOut;
@@ -338,7 +338,8 @@ module UartDevice (
     .io_samplerReset  (1'b0                         ), //i
     .io_samplerTick   (uartClocking_1_io_samplerTick), //o
     .io_bitTick       (uartClocking_1_io_bitTick    ), //o
-    .clk              (clk                          )  //i
+    .clk              (clk                          ), //i
+    .resetOut         (resetOut                     )  //i
   );
   UartCommFilter commFilter (
     .io_phyFilterMode (regCtrl_io_phyFilterMode[2:0]), //i
@@ -2222,12 +2223,12 @@ module UartCommFilter (
   assign ctsFilter_io_a = _zz_io_a[0];
   assign ctsFilter_io_b = _zz_io_a[1];
   assign ctsFilter_io_c = _zz_io_a[2];
-  assign dsrHistory_0 = io_phy_ri;
+  assign dsrHistory_0 = io_phy_dsr;
   assign _zz_io_a_1 = {dsrHistory_2,{dsrHistory_1,dsrHistory_0}};
   assign dsrFilter_io_a = _zz_io_a_1[0];
   assign dsrFilter_io_b = _zz_io_a_1[1];
   assign dsrFilter_io_c = _zz_io_a_1[2];
-  assign dcdHistory_0 = io_phy_ri;
+  assign dcdHistory_0 = io_phy_dcd;
   assign _zz_io_a_2 = {dcdHistory_2,{dcdHistory_1,dcdHistory_0}};
   assign dcdFilter_io_a = _zz_io_a_2[0];
   assign dcdFilter_io_b = _zz_io_a_2[1];
@@ -2366,14 +2367,129 @@ module UartClocking (
   input      [7:0]    io_divisor,
   input      [2:0]    io_phyFilterMode,
   input               io_samplerReset,
-  output              io_samplerTick,
-  output              io_bitTick,
-  input               clk
+  output reg          io_samplerTick,
+  output reg          io_bitTick,
+  input               clk,
+  input               resetOut
 );
 
+  reg        [7:0]    prescaleCtr;
+  reg        [7:0]    divisorCtr;
+  reg        [3:0]    bitCtr;
+  wire                when_UartClocking_l29;
+  wire                _zz_prescaleTick;
+  reg                 _zz_prescaleTick_regNext;
+  wire                _zz_prescaleTick_1;
+  reg                 _zz_prescaleTick_1_regNext;
+  wire                _zz_prescaleTick_2;
+  reg                 _zz_prescaleTick_2_regNext;
+  wire                _zz_prescaleTick_3;
+  reg                 _zz_prescaleTick_3_regNext;
+  wire                _zz_prescaleTick_4;
+  reg                 _zz_prescaleTick_4_regNext;
+  wire                _zz_prescaleTick_5;
+  reg                 _zz_prescaleTick_5_regNext;
+  wire                _zz_prescaleTick_6;
+  reg                 _zz_prescaleTick_6_regNext;
+  reg                 prescaleTick;
+  wire                when_UartClocking_l45;
+  wire                when_UartClocking_l57;
 
-  assign io_samplerTick = clk;
-  assign io_bitTick = clk;
+  always @(*) begin
+    io_samplerTick = 1'b0;
+    if(prescaleTick) begin
+      if(when_UartClocking_l45) begin
+        io_samplerTick = 1'b1;
+      end
+    end
+  end
+
+  always @(*) begin
+    io_bitTick = 1'b0;
+    if(!io_samplerReset) begin
+      if(io_samplerTick) begin
+        if(when_UartClocking_l57) begin
+          io_bitTick = 1'b1;
+        end
+      end
+    end
+  end
+
+  assign when_UartClocking_l29 = 1'b1;
+  assign _zz_prescaleTick = prescaleCtr[0];
+  assign _zz_prescaleTick_1 = prescaleCtr[1];
+  assign _zz_prescaleTick_2 = prescaleCtr[2];
+  assign _zz_prescaleTick_3 = prescaleCtr[3];
+  assign _zz_prescaleTick_4 = prescaleCtr[4];
+  assign _zz_prescaleTick_5 = prescaleCtr[5];
+  assign _zz_prescaleTick_6 = prescaleCtr[6];
+  always @(*) begin
+    case(io_prescaler)
+      3'b000 : begin
+        prescaleTick = 1'b1;
+      end
+      3'b001 : begin
+        prescaleTick = (_zz_prescaleTick && (! _zz_prescaleTick_regNext));
+      end
+      3'b010 : begin
+        prescaleTick = (_zz_prescaleTick_1 && (! _zz_prescaleTick_1_regNext));
+      end
+      3'b011 : begin
+        prescaleTick = (_zz_prescaleTick_2 && (! _zz_prescaleTick_2_regNext));
+      end
+      3'b100 : begin
+        prescaleTick = (_zz_prescaleTick_3 && (! _zz_prescaleTick_3_regNext));
+      end
+      3'b101 : begin
+        prescaleTick = (_zz_prescaleTick_4 && (! _zz_prescaleTick_4_regNext));
+      end
+      3'b110 : begin
+        prescaleTick = (_zz_prescaleTick_5 && (! _zz_prescaleTick_5_regNext));
+      end
+      default : begin
+        prescaleTick = (_zz_prescaleTick_6 && (! _zz_prescaleTick_6_regNext));
+      end
+    endcase
+  end
+
+  assign when_UartClocking_l45 = (divisorCtr == 8'h00);
+  assign when_UartClocking_l57 = (bitCtr == 4'b0000);
+  always @(posedge clk) begin
+    if(!resetOut) begin
+      prescaleCtr <= 8'h00;
+      divisorCtr <= 8'h00;
+      bitCtr <= 4'b0000;
+    end else begin
+      if(when_UartClocking_l29) begin
+        prescaleCtr <= (prescaleCtr - 8'h01);
+      end
+      if(prescaleTick) begin
+        if(when_UartClocking_l45) begin
+          divisorCtr <= io_divisor;
+        end else begin
+          divisorCtr <= (divisorCtr - 8'h01);
+        end
+      end
+      if(io_samplerReset) begin
+        bitCtr <= 4'b0111;
+      end else begin
+        if(io_samplerTick) begin
+          bitCtr <= (bitCtr - 4'b0001);
+        end
+      end
+    end
+  end
+
+  always @(posedge clk) begin
+    _zz_prescaleTick_regNext <= _zz_prescaleTick;
+    _zz_prescaleTick_1_regNext <= _zz_prescaleTick_1;
+    _zz_prescaleTick_2_regNext <= _zz_prescaleTick_2;
+    _zz_prescaleTick_3_regNext <= _zz_prescaleTick_3;
+    _zz_prescaleTick_4_regNext <= _zz_prescaleTick_4;
+    _zz_prescaleTick_5_regNext <= _zz_prescaleTick_5;
+    _zz_prescaleTick_6_regNext <= _zz_prescaleTick_6;
+  end
+
 
 endmodule
 
